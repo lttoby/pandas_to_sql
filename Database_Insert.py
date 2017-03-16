@@ -71,24 +71,24 @@ class DatabaseInsert(Database):
 
     def create_table(self, cols):
         if len(cols) < 800:
-            if table_name in self.table_list:
-                print "Table %s already existed" % table_name
+            if self.table_name in self.table_list:
+                print "Table %s already existed" % self.table_name
             else:
                 info = self.login_information
                 my_connect = MySQLdb.connect(info[0], info[1], info[2], info[3], info[4])
                 cursor = my_connect.cursor()
-                sql_command = create_table_command(cols, table_name, sub_key)
+                sql_command = create_table_command(cols, self.table_name, self.sub_key)
                 cursor.execute(sql_command)
                 my_connect.close()
                 cursor.close()
-                print "Table %s created" % table_name
-            self.table_add.append(table_name)
+                print "Table %s created" % self.table_name
+            self.table_add.append(self.table_name)
             self.columns_add_list.append(cols)
         else:
             tables_num = (len(cols) - 1) / 800 + 1
             potential_name = list()
             for i in range(tables_num):
-                table_name_i = "%s_%s" % (table_name, str(i+1).zfill(2))
+                table_name_i = "%s_%s" % (self.table_name, str(i+1).zfill(2))
                 potential_name.append(table_name_i)
 
             start = 0
@@ -112,24 +112,39 @@ class DatabaseInsert(Database):
                 start += 800
                 end += 800
 
-    def insert_data(self, data_input, sub_key_data):
+    def insert_data(self, data_input, sub_key_data=False):
         info = self.login_information
         my_connect = MySQLdb.connect(info[0], info[1], info[2], info[3], info[4])
         cursor = my_connect.cursor()
-        for i in range(len(self.table_add)):
-            sql_command = "INSERT INTO %s (`DATETIME`, `%s`" % (self.table_add[i], sub_key)
-            col_i_list = self.columns_add_list[i]
-            date_data = list(data_input.index)
-            sub_key_column = [sub_key_data] * len(data_input)
-            main_data = map(list, zip(*data_input[col_i_list].values))
-            data_insert = [date_data] + [sub_key_column] + main_data
-            data_insert = map(list, zip(*data_insert))
+        if self.sub_key:
+            for i in range(len(self.table_add)):
+                sql_command = "INSERT INTO %s (`DATETIME`, `%s`" % (self.table_add[i], self.sub_key)
+                col_i_list = self.columns_add_list[i]
+                date_data = list(data_input.index)
+                sub_key_column = [sub_key_data] * len(data_input)
+                main_data = map(list, zip(*data_input[col_i_list].values))
+                data_insert = [date_data] + [sub_key_column] + main_data
+                data_insert = map(list, zip(*data_insert))
 
-            for col_i in col_i_list:
-                sql_command = "%s, `%s`" % (sql_command, col_i)
-            sql_command += ") VALUES (%s" + ", %s" * (len(col_i_list) + 1) + ")"
-            cursor.executemany(sql_command, data_insert)
-            my_connect.commit()
+                for col_i in col_i_list:
+                    sql_command = "%s, `%s`" % (sql_command, col_i)
+                sql_command += ") VALUES (%s" + ", %s" * (len(col_i_list) + 1) + ")"
+                cursor.executemany(sql_command, data_insert)
+                my_connect.commit()
+        else:
+            for i in range(len(self.table_add)):
+                sql_command = "INSERT INTO %s (`DATETIME`" % self.table_add[i]
+                col_i_list = self.columns_add_list[i]
+                date_data = list(data_input.index)
+                main_data = map(list, zip(*data_input[col_i_list].values))
+                data_insert = [date_data] + main_data
+                data_insert = map(list, zip(*data_insert))
+
+                for col_i in col_i_list:
+                    sql_command = "%s, `%s`" % (sql_command, col_i)
+                sql_command += ") VALUES (%s" + ", %s" * len(col_i_list) + ")"
+                cursor.executemany(sql_command, data_insert)
+                my_connect.commit()
         my_connect.close()
         cursor.close()
 
