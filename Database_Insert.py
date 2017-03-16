@@ -102,7 +102,7 @@ class DatabaseInsert(Database):
                     my_connect = MySQLdb.connect(info[0], info[1], info[2], info[3], info[4])
                     cursor = my_connect.cursor()
                     col_add_i = cols[start:end]
-                    sql_command = create_table_command(col_add_i, table_i, sub_key)
+                    sql_command = create_table_command(col_add_i, table_i, self.sub_key)
                     cursor.execute(sql_command)
                     my_connect.close()
                     cursor.close()
